@@ -8,6 +8,7 @@ import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import budgetRoutes from './routes/budgetRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/budgets', budgetRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'FinFlow API is running 🚀' });
