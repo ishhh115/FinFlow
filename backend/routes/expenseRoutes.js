@@ -4,7 +4,8 @@ import {
     getExpenses,
     getExpense,
     updateExpense,
-    deleteExpense
+    deleteExpense,
+    exportExpenses
 } from '../controllers/expenseController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.use(protect);
 
+router.get('/export', exportExpenses);
 router.post('/', addExpense);
 router.get('/', getExpenses);
 router.get('/:id', getExpense);

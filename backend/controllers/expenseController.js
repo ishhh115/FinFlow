@@ -1,4 +1,5 @@
 import Expense from '../models/Expense.js';
+import { convertToCSV } from '../utils/csvExport.js';
 
 export const addExpense = async (req, res, next) => {
     try {
@@ -137,6 +138,23 @@ export const deleteExpense = async (req, res, next) => {
             success: true,
             message: 'Expense deleted successfully'
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+export const exportExpenses = async (req, res, next) => {
+    try {
+        const expenses = await Expense.find({
+            userId: req.user._id
+        }).sort({ date: -1 });
+
+        const csv = convertToCSV(expenses);
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=finflow-expenses.csv');
+        res.status(200).send(csv);
     } catch (error) {
         next(error);
     }
