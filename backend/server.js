@@ -12,6 +12,7 @@ import expenseRoutes from './routes/expenseRoutes.js';
 import budgetRoutes from './routes/budgetRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import insightRoutes from './routes/insightRoutes.js';
+import currencyRoutes from './routes/currencyRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/currencies', currencyRoutes);
 app.use('/api/insights', insightRoutes);
 
 app.get('/', (req, res) => {
