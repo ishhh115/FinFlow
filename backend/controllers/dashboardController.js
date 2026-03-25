@@ -108,3 +108,51 @@ export const getDashboard = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getSpendingStreak = async (req, res, next) => {
+    try {
+        const today = new Date();
+        let streak = 0;
+        let currentDate = new Date(today);
+
+        for (let i = 0; i < 30; i++) {
+            const startOfDay = new Date(currentDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(currentDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const dayExpenses = await Expense.find({
+                userId: req.user._id,
+                date: { $gte: startOfDay, $lte: endOfDay }
+            });
+
+            const dayTotal = dayExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+            const month = currentDate.getMonth() + 1;
+            const year = currentDate.getFullYear();
+
+            const budgets = await Budget.find({
+                userId: req.user._id,
+                month,
+                year
+            });
+
+            const dailyBudgetLimit = budgets.reduce((sum, b) => sum + b.limit, 0) / 30;
+
+            if (dayTotal <= dailyBudgetLimit || dayTotal === 0) {
+                streak++;
+            } else {
+                break;
+            }
+
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
+
+        res.status(200).json({
+            success: true,
+            data: { streak }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
