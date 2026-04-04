@@ -4,8 +4,9 @@ import { getProfile } from '../services/authService.js';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    const hasToken = !!localStorage.getItem('token');
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(hasToken);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -14,8 +15,6 @@ export const AuthProvider = ({ children }) => {
                 .then(data => setUser(data.data))
                 .catch(() => localStorage.removeItem('token'))
                 .finally(() => setLoading(false));
-        } else {
-            setLoading(false);
         }
     }, []);
 
@@ -29,8 +28,12 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const updateUser = (updatedUser) => {
+        setUser(updatedUser);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );
