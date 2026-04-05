@@ -19,7 +19,7 @@ const SUGGESTED_PROMPTS = [
 const AIAssistant = () => {
     const { user } = useAuth();
     const location = useLocation();
-    const [isOpen, setIsOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     
@@ -115,8 +115,8 @@ const AIAssistant = () => {
     };
 
     useEffect(() => {
-        if (isOpen) scrollToBottom();
-    }, [messages, isOpen]);
+        if (isChatOpen) scrollToBottom();
+    }, [messages, isChatOpen]);
 
     if (!user) return null;
 
@@ -158,8 +158,9 @@ const AIAssistant = () => {
         <>
             {/* FLOATING BUTTON */}
             <button 
-                onClick={() => setIsOpen(true)}
-                className={`fixed bottom-8 right-8 z-[9999] p-4 rounded-full bg-gradient-to-r from-teal-500 to-indigo-500 text-white shadow-[0_10px_25px_-5px_rgba(20,184,166,0.5)] hover:scale-105 hover:shadow-[0_15px_35px_-5px_rgba(20,184,166,0.6)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                className={`fixed bottom-8 right-8 z-[9999] p-4 rounded-full bg-gradient-to-r from-teal-500 to-indigo-500 text-white shadow-[0_10px_25px_-5px_rgba(20,184,166,0.5)] hover:scale-105 hover:shadow-[0_15px_35px_-5px_rgba(20,184,166,0.6)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
                 aria-label="Open AI Assistant"
             >
                 <Sparkles size={24} className="animate-pulse" />
@@ -168,7 +169,7 @@ const AIAssistant = () => {
             {/* CHAT PANEL */}
             <div 
                 className={`fixed z-[9999] bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-100 flex flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] origin-bottom-right 
-                ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'} 
+                ${isChatOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'} 
                 ${isMaximized 
                     ? 'top-0 left-0 right-0 bottom-0 w-full h-[100dvh] rounded-none border-none' 
                     : 'bottom-8 right-8 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md h-[600px] max-h-[80vh] rounded-3xl'
@@ -184,7 +185,11 @@ const AIAssistant = () => {
                     <div className="flex items-center gap-3">
                         {isMaximized && (
                             <button 
-                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setIsSidebarOpen(prev => !prev);
+                                }}
                                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors mr-1"
                                 aria-label="Toggle Sidebar"
                             >
@@ -224,7 +229,8 @@ const AIAssistant = () => {
                         </button>
                         <div className="w-px h-5 bg-slate-800 mx-1"></div>
                         <button 
-                            onClick={() => { setIsOpen(false); setIsMaximized(false); }}
+                            type="button"
+                            onClick={() => { setIsChatOpen(false); setIsMaximized(false); }}
                             className="p-2.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all duration-200"
                             aria-label="Close"
                         >
