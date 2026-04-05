@@ -23,9 +23,9 @@ const AIAssistant = () => {
     const [isMaximized, setIsMaximized] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     
-    const [sessions, setSessions] = useState(() => {
+    const [chats, setChats] = useState(() => {
         if (!user) return [];
-        const saved = localStorage.getItem(`finflow_ai_sessions_${user._id}`);
+        const saved = localStorage.getItem(`finflow_ai_chats_${user._id}`);
         if (saved) return JSON.parse(saved);
         
         // Backward compatibility
@@ -43,22 +43,22 @@ const AIAssistant = () => {
         }
         return [];
     });
-    const [activeSessionId, setActiveSessionId] = useState(sessions.length > 0 ? sessions[0].id : null);
+    const [activeChatId, setActiveChatId] = useState(chats.length > 0 ? chats[0].id : null);
     
     // Derived messages
-    const activeSession = sessions.find(s => s.id === activeSessionId);
-    const messages = activeSession ? activeSession.messages : [];
+    const activeChat = chats.find(c => c.id === activeChatId);
+    const messages = activeChat ? activeChat.messages : [];
 
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
 
-    // Synchronize to localStorage whenever sessions change
+    // Synchronize to localStorage whenever chats change
     useEffect(() => {
-        if (user && sessions.length > 0) {
-            localStorage.setItem(`finflow_ai_sessions_${user._id}`, JSON.stringify(sessions));
+        if (user && chats.length > 0) {
+            localStorage.setItem(`finflow_ai_chats_${user._id}`, JSON.stringify(chats));
         }
-    }, [sessions, user]);
+    }, [chats, user]);
 
     const startNewChat = useCallback(() => {
         const hour = new Date().getHours();
@@ -71,42 +71,47 @@ const AIAssistant = () => {
             ? `${timeGreeting}, ${userName}! 👋 How can I help you optimize your finances today?`
             : `Hi there! 👋 How can I help you today?`;
 
-        const newSession = {
+        const newChat = {
             id: Date.now().toString(),
             title: 'New Chat',
             messages: [{ role: 'ai', content: greetingStr, timestamp: new Date().toISOString() }],
             updatedAt: new Date().toISOString()
         };
         
-        setSessions(prev => [newSession, ...prev]);
-        setActiveSessionId(newSession.id);
+        setChats(prev => [newChat, ...prev]);
+        setActiveChatId(newChat.id);
     }, [user]);
 
     // Initialization check
     useEffect(() => {
         if (!user) return;
-        if (sessions.length === 0) {
+        if (chats.length === 0) {
             startNewChat();
-        } else if (!activeSessionId) {
-            setActiveSessionId(sessions[0].id);
+        } else if (!activeChatId) {
+            setActiveChatId(chats[0].id);
         }
-    }, [user, sessions.length, activeSessionId, startNewChat]);
+    }, [user, chats.length, activeChatId, startNewChat]);
 
-    const updateSessionMessages = (updater) => {
-        setSessions(prev => prev.map(s => {
-            if (s.id === activeSessionId) {
-                const newMessages = typeof updater === 'function' ? updater(s.messages) : updater;
+    const updateChatMessages = (updater) => {
+        setChats(prev => prev.map(c => {
+            if (c.id === activeChatId) {
+                const newMessages = typeof updater === 'function' ? updater(c.messages) : updater;
                 
-                let newTitle = s.title;
-                if (s.title === 'New Chat') {
+                let newTitle = c.title;
+                if (c.title === 'New Chat') {
                     const firstUserMsg = newMessages.find(m => m.role === 'user');
-                    if (firstUserMsg) {
-                        newTitle = firstUserMsg.content.slice(0, 25) + (firstUserMsg.content.length > 25 ? '...' : '');
+                    if (firstUserMsg && firstUserMsg.content) {
+                        const cleanText = firstUserMsg.content.replace(/[^\w\s-]/g, '').trim();
+                        const words = cleanText.split(/\s+/);
+                        if (words.length > 0 && words[0] !== "") {
+                            newTitle = words.slice(0, 5).join(' ');
+                            newTitle = newTitle.charAt(0).toUpperCase() + newTitle.slice(1);
+                        }
                     }
                 }
-                return { ...s, messages: newMessages, title: newTitle, updatedAt: new Date().toISOString() };
+                return { ...c, messages: newMessages, title: newTitle, updatedAt: new Date().toISOString() };
             }
-            return s;
+            return c;
         }));
     };
 
@@ -122,12 +127,12 @@ const AIAssistant = () => {
 
     const handleClearChat = () => {
         if (window.confirm("Are you sure you want to delete this chat session?")) {
-            setSessions(prev => prev.filter(s => s.id !== activeSessionId));
-            setActiveSessionId(null);
+            setChats(prev => prev.filter(c => c.id !== activeChatId));
+            setActiveChatId(null);
             
-            // if deleting the last session, manually trigger a clean state reset
-            if (sessions.length <= 1) {
-                localStorage.removeItem(`finflow_ai_sessions_${user._id}`);
+            // if deleting the last chat, manually trigger a clean state reset
+            if (chats.length <= 1) {
+                localStorage.removeItem(`finflow_ai_chats_${user._id}`);
             }
         }
     };
@@ -137,7 +142,7 @@ const AIAssistant = () => {
         if (!query) return;
 
         const newUserMessage = { role: 'user', content: query, timestamp: new Date().toISOString() };
-        updateSessionMessages(prev => [...prev, newUserMessage]);
+        updateChatMessages(prev => [...prev, newUserMessage]);
         setInput('');
         setIsTyping(true);
 
@@ -145,10 +150,10 @@ const AIAssistant = () => {
             const contextStr = location.pathname.includes('/insights') ? 'insights' : 
                                location.pathname.includes('/dashboard') ? 'dashboard' : 'general';
             const response = await askAi(query, contextStr);
-            updateSessionMessages(prev => [...prev, { role: 'ai', content: response.answer, timestamp: new Date().toISOString() }]);
+            updateChatMessages(prev => [...prev, { role: 'ai', content: response.answer, timestamp: new Date().toISOString() }]);
         } catch {
             toast.error("Failed to get AI response");
-            updateSessionMessages(prev => [...prev, { role: 'ai', content: "I'm having trouble connecting to my brain right now. Try again later!", timestamp: new Date().toISOString() }]);
+            updateChatMessages(prev => [...prev, { role: 'ai', content: "I'm having trouble connecting to my brain right now. Try again later!", timestamp: new Date().toISOString() }]);
         } finally {
             setIsTyping(false);
         }
@@ -252,9 +257,9 @@ const AIAssistant = () => {
                             />
                             
                             <div 
-                                className={`absolute sm:relative h-full z-20 flex flex-col shrink-0 bg-slate-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${isSidebarOpen ? 'translate-x-0 w-[260px] border-r border-slate-200 shadow-2xl sm:shadow-none' : '-translate-x-full w-[260px] sm:w-0 sm:translate-x-0 opacity-0 sm:opacity-100 pointer-events-none'}`}
+                                className={`absolute sm:relative h-full z-20 flex flex-col shrink-0 bg-slate-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden ${isSidebarOpen ? 'translate-x-0 w-[260px] border-r border-slate-200 shadow-2xl sm:shadow-none' : '-translate-x-full w-[260px] sm:w-0 sm:translate-x-0 opacity-0 pointer-events-none border-transparent'}`}
                             >
-                                <div className="w-[260px] h-full flex flex-col shrink-0 overflow-hidden bg-slate-50">
+                                <div className="w-[260px] h-full flex flex-col shrink-0 bg-slate-50">
                                     <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
                                         <span className="font-bold text-slate-800 text-sm tracking-tight">Recents</span>
                                         <button 
@@ -266,19 +271,19 @@ const AIAssistant = () => {
                                         </button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar shadow-[inset_-10px_0_20px_-10px_rgba(0,0,0,0.02)]">
-                                        {sessions.map(s => (
+                                        {chats.map(c => (
                                             <button 
-                                                key={s.id}
+                                                key={c.id}
                                                 onClick={() => {
-                                                    setActiveSessionId(s.id);
+                                                    setActiveChatId(c.id);
                                                     if (window.innerWidth < 640) setIsSidebarOpen(false); // auto-close on mobile
                                                 }}
-                                                className={`w-full flex items-center gap-2.5 p-3 text-left rounded-xl transition-all duration-200 group ${activeSessionId === s.id ? 'bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200/50 border border-transparent'}`}
+                                                className={`w-full flex items-center gap-2.5 p-3 text-left rounded-xl transition-all duration-200 group ${activeChatId === c.id ? 'bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-200/50 border border-transparent'}`}
                                             >
-                                                <MessageCircle size={15} className={`shrink-0 ${activeSessionId === s.id ? 'text-teal-500' : 'text-slate-400 group-hover:text-slate-500'}`} />
+                                                <MessageCircle size={15} className={`shrink-0 ${activeChatId === c.id ? 'text-teal-500' : 'text-slate-400 group-hover:text-slate-500'}`} />
                                                 <div className="flex-1 flex flex-col overflow-hidden">
-                                                    <span className="text-sm font-semibold truncate leading-tight">{s.title === 'New Chat' && s.messages.length > 1 ? s.messages.find(m => m.role === 'user')?.content || 'New Chat' : s.title}</span>
-                                                    <span className="text-[10px] text-slate-400 mt-0.5">{new Date(s.updatedAt).toLocaleDateString()}</span>
+                                                    <span className="text-sm font-semibold truncate leading-tight">{c.title === 'New Chat' && c.messages.length > 1 ? c.messages.find(m => m.role === 'user')?.content || 'New Chat' : c.title}</span>
+                                                    <span className="text-[10px] text-slate-400 mt-0.5">{new Date(c.updatedAt).toLocaleDateString()}</span>
                                                 </div>
                                             </button>
                                         ))}

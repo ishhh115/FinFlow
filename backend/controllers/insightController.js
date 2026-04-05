@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Expense from '../models/Expense.js';
+import Budget from '../models/Budget.js';
 
 export const getInsights = async (req, res, next) => {
     try {
@@ -80,31 +81,66 @@ export const askAi = async (req, res, next) => {
         const { query, pageContext } = req.body;
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-        const expenses = await Expense.find({ userId: req.user._id }).sort({ date: -1 }).limit(100);
-        
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        // Parallelize fetching relevant financial data
+        const [expenses, budgets] = await Promise.all([
+            Expense.find({ userId: req.user._id, date: { 
+                $gte: new Date(currentYear, currentMonth - 1, 1),
+                $lte: new Date(currentYear, currentMonth, 0, 23, 59, 59)
+            }}).sort({ date: -1 }),
+            Budget.find({ userId: req.user._id, month: currentMonth, year: currentYear })
+        ]);
+
+        if (expenses.length === 0 && budgets.length === 0) {
+            return res.status(200).json({ 
+                success: true, 
+                answer: "I don't see any expense or budget data yet! To give you the best personalized financial insights, please add some expenses or set up a budget first. I'll be here when you're ready!" 
+            });
+        }
+
+        // Summary Calculations
+        const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const categoryTotals = expenses.reduce((acc, exp) => {
+            acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+            return acc;
+        }, {});
+
         const expenseData = expenses.length > 0
-            ? expenses.map(exp => `${exp.date.toISOString().split('T')[0]}: ₹${exp.amount} on ${exp.category} (${exp.title})`).join('\n')
+            ? expenses.slice(0, 50).map(exp => `- ₹${exp.amount} on ${exp.category} (${exp.title})`).join('\n')
             : "No transactions recorded yet.";
+
+        const budgetData = budgets.length > 0
+            ? budgets.map(b => `- ${b.category}: Limit ₹${b.limit} (Spent: ₹${categoryTotals[b.category] || 0})`).join('\n')
+            : "No active budgets.";
+
+        const summaryString = `Total Spent This Month: ₹${totalSpent} across ${expenses.length} transactions. Highest category: ${Object.keys(categoryTotals).length ? Object.keys(categoryTotals).reduce((a, b) => categoryTotals[a] > categoryTotals[b] ? a : b) : 'None'}.`;
 
         let contextPrompt = "";
         if (pageContext === 'dashboard') {
-            contextPrompt = "The user is currently on the Dashboard. Focus heavily on current spending summaries, recent transactions, and high-level budgeting. Keep it brief and numeric where possible.";
+            contextPrompt = "User is on the Dashboard. Emphasize their current spending limits and summary. Be highly numeric.";
         } else if (pageContext === 'insights') {
-            contextPrompt = "The user is currently on the Insights page. Give deeper, analytical advice exploring behavioral spending patterns, long-term savings strategies, and hidden trends.";
+            contextPrompt = "User is on the Insights page. Analyze their behavioral spending habits, pinpoint inefficiencies, and give constructive criticism mapping to their budgets.";
         } else {
-            contextPrompt = "Provide a helpful, precise, and concise response.";
+            contextPrompt = "Provide precise, actionable financial advice.";
         }
 
         const prompt = `
-            You are FinFlow AI, a premium personal finance assistant.
-            Here is the user's recent transaction history:
+            You are FinFlow AI, a premium personal finance assistant talking to ${req.user.name}.
+            
+            [USER'S REAL FINANCIAL DATA]
+            **Summary**: ${summaryString}
+            **Budgets**:
+            ${budgetData}
+            **Recent Expenses**:
             ${expenseData}
             
-            ${contextPrompt}
+            **Context**: ${contextPrompt}
+            **User's query**: "${query}"
             
-            User's query: "${query}"
-            
-            Based on the transaction data and context provided, answer the user. Use a friendly, modern fintech tone. Format it smoothly using markdown if necessary. Limit to around 100 words.
+            Based EXACTLY on the financial data provided above, answer the user. Ground your response heavily in their actual numbers. Use a friendly, modern fintech tone. Format it smoothly using markdown. Limit to around 100-150 words. If their query is totally unrelated to finance, gently guide them back to discussing their financials and budget data.
         `;
 
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });

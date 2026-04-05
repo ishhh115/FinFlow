@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { Download, Filter, Plus, Search, CalendarDays } from 'lucide-react';
 import {
@@ -44,7 +44,7 @@ const ExpensesPage = () => {
     });
     const [formData, setFormData] = useState(getDefaultFormState());
 
-    const loadExpenses = async () => {
+    const loadExpenses = useCallback(async () => {
         setLoading(true);
         try {
             const appliedFilters = Object.fromEntries(
@@ -58,11 +58,11 @@ const ExpensesPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters]);
 
     useEffect(() => {
         loadExpenses();
-    }, []);
+    }, [loadExpenses]);
 
     const clearForm = () => {
         setFormData(getDefaultFormState());
