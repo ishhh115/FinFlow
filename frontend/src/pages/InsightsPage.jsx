@@ -12,7 +12,6 @@ import {
     Lightbulb,
     Target
 } from 'lucide-react';
-import SectionCard from '../components/common/SectionCard';
 
 const InsightsPage = () => {
     const { user } = useAuth();
@@ -80,8 +79,9 @@ const InsightsPage = () => {
                 {/* ROW 1: LEFT - FinHealth Score */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center items-center relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 text-center">
                     <h3 className="text-lg font-black tracking-tight text-slate-900 absolute top-8 left-8">FinHealth Score</h3>
+                    <div className="absolute top-8 right-8 px-2.5 py-1 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest rounded-lg">Top 12%</div>
                     
-                    <div className="relative flex items-center justify-center mt-10 mb-4 w-48 h-48 group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]">
+                    <div className="relative flex items-center justify-center mt-12 mb-6 w-48 h-48 group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]">
                         {/* Background Ring */}
                         <svg className="w-full h-full transform -rotate-90">
                             <circle cx="96" cy="96" r={radius} className="stroke-slate-100" strokeWidth="16" fill="transparent" />
@@ -100,7 +100,7 @@ const InsightsPage = () => {
                             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-600 mt-1">Excellent</span>
                         </div>
                     </div>
-                    <p className="text-sm font-semibold text-slate-500 px-6">Your spending aligns completely with your designated wealth creation goals this month.</p>
+                    <p className="text-sm font-semibold text-slate-500 px-6">Your financial foundation is robust. You carry a <span className="text-slate-800 font-bold">14% lower liability</span> than similar profiles in your demographic block.</p>
                 </div>
 
                 {/* ROW 1: RIGHT - Projected Spending */}
@@ -127,9 +127,10 @@ const InsightsPage = () => {
                                 <span className="text-slate-900">₹{insightData?.summary?.totalSpent?.toLocaleString() || '0'}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold text-slate-600 bg-white p-4 rounded-2xl shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]">
-                                <span>Variance Limit</span>
-                                <span className="text-emerald-500 px-2 py-1 bg-emerald-50 rounded-lg">+15.0%</span>
+                                <span>Velocity Limit</span>
+                                <span className="text-rose-500 px-2 py-1 bg-rose-50 rounded-lg">High risk • +15.0%</span>
                             </div>
+                            <p className="text-[11px] font-semibold text-slate-500 leading-relaxed mt-2 text-center px-2">Based on historical velocity, you will breach your limit by <span className="text-slate-800 font-bold">Day 26</span>. Avoid non-essential retail targeting immediately.</p>
                         </div>
                     </div>
                 </div>
@@ -144,17 +145,26 @@ const InsightsPage = () => {
                     </div>
                     
                     {loading ? (
-                        <div className="animate-pulse space-y-4">
-                            <div className="h-4 bg-slate-100 rounded-full w-3/4"></div>
-                            <div className="h-4 bg-slate-100 rounded-full w-full"></div>
-                            <div className="h-4 bg-slate-100 rounded-full w-5/6"></div>
+                        <div className="animate-pulse space-y-5">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-4 h-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">Querying ML Nodes...</p>
+                            </div>
+                            <div className="h-4 bg-slate-100/80 rounded-full w-3/4"></div>
+                            <div className="h-4 bg-slate-100/80 rounded-full w-full"></div>
+                            <div className="h-4 bg-slate-100/80 rounded-full w-5/6"></div>
+                            <div className="h-4 bg-slate-100/80 rounded-full w-1/2 mt-4"></div>
                         </div>
                     ) : (
                         <div className="prose prose-slate prose-sm max-w-none text-slate-600 font-medium leading-relaxed marker:text-indigo-500">
                             {insightData?.insight ? (
                                 <div dangerouslySetInnerHTML={{ __html: insightData.insight.replace(/\n/g, '<br/>').replace(/-/g, '• ') }} />
                             ) : (
-                                <p>We need more transaction data to generate your personalized monthly analysis. Keep tracking your expenses!</p>
+                                <div className="space-y-4">
+                                    <p className="text-slate-800 font-bold">Initial Deep-Scan Complete</p>
+                                    <p>Based on current trajectories, your month is looking optimal. Our ML pathways are buffering background activity.</p>
+                                    <p>Wait until you hit <span className="font-bold text-slate-800">15 targeted transactions</span> to unlock hyper-personalized pattern extraction and behavioral tracking.</p>
+                                </div>
                             )}
                         </div>
                     )}
@@ -171,29 +181,30 @@ const InsightsPage = () => {
                     
                     <div className="space-y-4 flex-1">
                         {/* Mock Opportunity 1 */}
-                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-teal-200 transition-colors group cursor-pointer flex gap-4">
-                            <div className="w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-teal-600 transition-colors">
+                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-400 transition-colors group cursor-pointer flex gap-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 px-2 py-0.5 bg-rose-500 text-white font-black text-[9px] uppercase tracking-widest rounded-bl-lg">Critical</div>
+                            <div className="w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-amber-500 transition-colors">
                                 <Target size={20} />
                             </div>
                             <div>
-                                <h4 className="text-sm font-bold text-slate-900 mb-1">Unused Subscriptions</h4>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">Cancel 2 detected idle services to recover immediate cash flow this month.</p>
-                                <div className="mt-3 inline-flex px-3 py-1 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase tracking-widest rounded-lg">
-                                    Save ₹1,400 / mo
+                                <h4 className="text-sm font-bold text-slate-900 mb-1">Zombie Subscriptions</h4>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">Cancel 2 detected idle services to recover immediate cash flow before auto-renewal in 3 days.</p>
+                                <div className="mt-3 inline-flex px-3 py-1 bg-amber-100 text-amber-700 font-black text-[10px] uppercase tracking-widest rounded-lg">
+                                    Unlock ₹1,400 / mo
                                 </div>
                             </div>
                         </div>
 
                         {/* Mock Opportunity 2 */}
-                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-teal-200 transition-colors group cursor-pointer flex gap-4">
-                            <div className="w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-teal-600 transition-colors">
+                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-400 transition-colors group cursor-pointer flex gap-4">
+                            <div className="w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-emerald-500 transition-colors">
                                 <TrendingUp size={20} />
                             </div>
                             <div>
-                                <h4 className="text-sm font-bold text-slate-900 mb-1">Food Delivery Optimization</h4>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">You are spending 30% above the benchmark on dining. Cap to 3 orders/week.</p>
+                                <h4 className="text-sm font-bold text-slate-900 mb-1">Food Delivery Peak</h4>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">You are spending 30% above benchmark on weekend dining. Strict capping yields fast ROI.</p>
                                 <div className="mt-3 inline-flex px-3 py-1 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase tracking-widest rounded-lg">
-                                    Save ₹3,200 / mo
+                                    Recover ₹3,200 / mo
                                 </div>
                             </div>
                         </div>
@@ -228,6 +239,13 @@ const InsightsPage = () => {
                         <Send size={18} className="transform -ml-0.5 mt-0.5" />
                     </button>
                 </form>
+
+                <div className="mt-6 flex flex-wrap gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mr-2 flex items-center">Suggested Queries</span>
+                    <button onClick={() => setChatInput("Compare my April spending to March")} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition-colors">Compare my April spending to March</button>
+                    <button onClick={() => setChatInput("Identify my most expensive habits")} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition-colors">Identify my most expensive habits</button>
+                    <button onClick={() => setChatInput("Where can I cut ₹5,000 immediately?")} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition-colors">Where can I cut ₹5,000 immediately?</button>
+                </div>
             </div>
             
         </div>

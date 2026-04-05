@@ -74,3 +74,45 @@ export const getInsights = async (req, res, next) => {
         next(error);
     }
 };
+
+export const askAi = async (req, res, next) => {
+    try {
+        const { query, pageContext } = req.body;
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+        const expenses = await Expense.find({ userId: req.user._id }).sort({ date: -1 }).limit(100);
+        
+        const expenseData = expenses.length > 0
+            ? expenses.map(exp => `${exp.date.toISOString().split('T')[0]}: ₹${exp.amount} on ${exp.category} (${exp.title})`).join('\n')
+            : "No transactions recorded yet.";
+
+        let contextPrompt = "";
+        if (pageContext === 'dashboard') {
+            contextPrompt = "The user is currently on the Dashboard. Focus heavily on current spending summaries, recent transactions, and high-level budgeting. Keep it brief and numeric where possible.";
+        } else if (pageContext === 'insights') {
+            contextPrompt = "The user is currently on the Insights page. Give deeper, analytical advice exploring behavioral spending patterns, long-term savings strategies, and hidden trends.";
+        } else {
+            contextPrompt = "Provide a helpful, precise, and concise response.";
+        }
+
+        const prompt = `
+            You are FinFlow AI, a premium personal finance assistant.
+            Here is the user's recent transaction history:
+            ${expenseData}
+            
+            ${contextPrompt}
+            
+            User's query: "${query}"
+            
+            Based on the transaction data and context provided, answer the user. Use a friendly, modern fintech tone. Format it smoothly using markdown if necessary. Limit to around 100 words.
+        `;
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent(prompt);
+        const answer = result.response.text();
+
+        res.status(200).json({ success: true, answer });
+    } catch (error) {
+        next(error);
+    }
+};

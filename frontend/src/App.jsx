@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import AppLayout from './components/layout/AppLayout';
+import AIAssistant from './components/common/AIAssistant';
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -43,6 +44,7 @@ function App() {
         <Router>
             <AuthProvider>
                 <Toaster position="top-right" />
+                <AIAssistant />
                 <AppRoutes />
             </AuthProvider>
         </Router>
