@@ -1,31 +1,128 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { getInsights } from '../services/insightService';
+import { askAi } from '../services/insightService';
+import { getExpenses } from '../services/expenseService';
+import { getBudgets } from '../services/budgetService';
+import { generateInsights, calculateSpendingVelocity, calculateMonthlyProjection } from '../utils/financialInsights';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../context/AuthContext';
-import { 
-    Download, 
-    Share2, 
-    BrainCircuit, 
-    TrendingUp, 
-    Sparkles, 
+import {
+    Download,
+    Share2,
+    BrainCircuit,
+    TrendingUp,
+    Sparkles,
     Send,
     Lightbulb,
-    Target
+    Target,
+    Loader2,
+    CalendarDays,
+    Flame,
+    Coffee,
+    PieChart,
+    Scissors,
+    ShieldCheck,
+    ZapOff,
+    Activity,
+    Search,
+    List
 } from 'lucide-react';
+
+const SUGGESTED_QUERIES = [
+    { 
+        category: 'Spending Patterns',
+        queries: [
+            { text: "Compare my April spending to March", icon: CalendarDays },
+            { text: "Identify my most expensive habits", icon: Flame },
+            { text: "Show my weekend vs weekday spending", icon: Coffee },
+            { text: "What category did I spend the most on?", icon: PieChart }
+        ]
+    },
+    { 
+        category: 'Savings & Strategy', 
+        queries: [
+            { text: "Where can I cut ₹5,000 immediately?", icon: Scissors },
+            { text: "Suggest a budget for next month", icon: Target },
+            { text: "How much should I save for an emergency?", icon: ShieldCheck },
+            { text: "Find unused subscriptions to cancel", icon: ZapOff }
+        ]
+    },
+    { 
+        category: 'Deep Analysis', 
+        queries: [
+            { text: "Analyze my overall financial health", icon: Activity },
+            { text: "Are there any anomalies in my spending?", icon: Search },
+            { text: "Predict my end-of-month balance", icon: TrendingUp },
+            { text: "Summarize my top 5 transactions", icon: List }
+        ]
+    }
+];
 
 const InsightsPage = () => {
     const { user } = useAuth();
-    const [insightData, setInsightData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [chatInput, setChatInput] = useState('');
+    const [aiResponse, setAiResponse] = useState('');
+    const [isAiLoading, setIsAiLoading] = useState(false);
+
+    const handleAskAi = async (e) => {
+        if (e) e.preventDefault();
+        const query = chatInput.trim();
+        if (!query || isAiLoading) return;
+
+        setIsAiLoading(true);
+        setAiResponse('');
+        // We will purposely not clear the input box yet, until success or user changes it manually, 
+        // to match AI assistant standards or we can clear it and show the query in the results.
+        // The prompt asks to "Display response below input section". Let's clear it since it feels clean.
+        setChatInput('');
+
+        try {
+            const res = await askAi(query, 'insights');
+            setAiResponse(res.answer);
+        } catch (error) {
+            console.error("AI Error:", error);
+            toast.error("Failed to connect to AI");
+            setAiResponse("I'm sorry, I couldn't process that right now. Please try again.");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
+    const [insightData, setInsightData] = useState({ behavior: '', risk: 'UNKNOWN', suggestions: [] });
+    const [stats, setStats] = useState({ totalSpent: 0, projectedSpend: 0 });
 
     const loadInsights = async () => {
         setLoading(true);
         try {
-            const response = await getInsights();
-            setInsightData(response.data);
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            
+            const startDate = new Date(year, month - 1, 1).toISOString().slice(0, 10);
+            const endDate = new Date(year, month, 0).toISOString().slice(0, 10);
+
+            const [budgetsRes, expensesRes] = await Promise.all([
+                getBudgets(month, year),
+                getExpenses({ startDate, endDate })
+            ]);
+
+            const budgets = budgetsRes.data || [];
+            const expenses = (expensesRes.data || []).filter(exp => {
+                const dateObj = new Date(exp.date);
+                return dateObj.getMonth() + 1 === month && dateObj.getFullYear() === year;
+            });
+
+            // Calculate Dynamic View Variables
+            const smartInsights = generateInsights(expenses, budgets, date);
+            const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+            const velocity = calculateSpendingVelocity(totalSpent, date);
+            const projectedSpend = calculateMonthlyProjection(velocity, date);
+
+            setInsightData(smartInsights);
+            setStats({ totalSpent, projectedSpend });
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to load insights');
+            toast.error(error.response?.data?.error || 'Failed to load smart insights');
         } finally {
             setLoading(false);
         }
@@ -36,9 +133,9 @@ const InsightsPage = () => {
     }, []);
 
     // Derived mocks from actual data for FinHealth
-    const finHealthScore = 86; // Out of 100
-    const projectedSpend = insightData?.summary?.totalSpent ? Math.round(insightData.summary.totalSpent * 1.15) : 0;
-    
+    const finHealthScore = insightData.risk === 'LOW' ? 92 : insightData.risk === 'MEDIUM' ? 68 : 42;
+    const projectedSpend = stats.projectedSpend;
+
     // Circular Progress Math
     const radius = 60;
     const circumference = 2 * Math.PI * radius;
@@ -60,7 +157,7 @@ const InsightsPage = () => {
                     <h1 className="text-4xl lg:text-5xl font-black tracking-tighter text-white mb-2">AI Intelligence Report</h1>
                     <p className="text-sm font-semibold text-slate-400 max-w-xl">Deep behavioral analysis of {user?.name}'s recent financial activities, identifying hidden saving opportunities and forecasting spend.</p>
                 </div>
-                
+
                 <div className="flex items-center gap-3 relative z-10 w-full md:w-auto">
                     <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-widest transition-all duration-300">
                         <Share2 size={16} />
@@ -75,24 +172,24 @@ const InsightsPage = () => {
 
             {/* 2. GRID LAYOUT (ROW 1 & ROW 2) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+
                 {/* ROW 1: LEFT - FinHealth Score */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center items-center relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.08)] transition-all duration-500 text-center">
                     <h3 className="text-lg font-black tracking-tight text-slate-900 absolute top-8 left-8">FinHealth Score</h3>
                     <div className="absolute top-8 right-8 px-2.5 py-1 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest rounded-lg">Top 12%</div>
-                    
+
                     <div className="relative flex items-center justify-center mt-12 mb-6 w-48 h-48 group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]">
                         {/* Background Ring */}
                         <svg className="w-full h-full transform -rotate-90">
                             <circle cx="96" cy="96" r={radius} className="stroke-slate-100" strokeWidth="16" fill="transparent" />
                             {/* Foreground Ring */}
-                            <circle 
-                                cx="96" cy="96" r={radius} 
-                                className="stroke-teal-500 drop-shadow-[0_0_15px_rgba(20,184,166,0.5)] transition-all duration-1000 ease-out" 
-                                strokeWidth="16" fill="transparent" 
-                                strokeDasharray={circumference} 
-                                strokeDashoffset={strokeDashoffset} 
-                                strokeLinecap="round" 
+                            <circle
+                                cx="96" cy="96" r={radius}
+                                className="stroke-teal-500 drop-shadow-[0_0_15px_rgba(20,184,166,0.5)] transition-all duration-1000 ease-out"
+                                strokeWidth="16" fill="transparent"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={strokeDashoffset}
+                                strokeLinecap="round"
                             />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -120,7 +217,7 @@ const InsightsPage = () => {
                             <span className="text-3xl text-slate-400 font-bold mr-1">₹</span>
                             {projectedSpend.toLocaleString()}
                         </span>
-                        
+
                         <div className="mt-8 space-y-4">
                             <div className="flex justify-between items-center text-sm font-bold text-slate-600 bg-white p-4 rounded-2xl shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]">
                                 <span>Current Spend</span>
@@ -143,7 +240,7 @@ const InsightsPage = () => {
                         </div>
                         <h3 className="text-xl font-black tracking-tight text-slate-900">Monthly Analysis</h3>
                     </div>
-                    
+
                     {loading ? (
                         <div className="animate-pulse space-y-5">
                             <div className="flex items-center gap-3 mb-2">
@@ -152,20 +249,25 @@ const InsightsPage = () => {
                             </div>
                             <div className="h-4 bg-slate-100/80 rounded-full w-3/4"></div>
                             <div className="h-4 bg-slate-100/80 rounded-full w-full"></div>
-                            <div className="h-4 bg-slate-100/80 rounded-full w-5/6"></div>
-                            <div className="h-4 bg-slate-100/80 rounded-full w-1/2 mt-4"></div>
                         </div>
                     ) : (
-                        <div className="prose prose-slate prose-sm max-w-none text-slate-600 font-medium leading-relaxed marker:text-indigo-500">
-                            {insightData?.insight ? (
-                                <div dangerouslySetInnerHTML={{ __html: insightData.insight.replace(/\n/g, '<br/>').replace(/-/g, '• ') }} />
-                            ) : (
-                                <div className="space-y-4">
-                                    <p className="text-slate-800 font-bold">Initial Deep-Scan Complete</p>
-                                    <p>Based on current trajectories, your month is looking optimal. Our ML pathways are buffering background activity.</p>
-                                    <p>Wait until you hit <span className="font-bold text-slate-800">15 targeted transactions</span> to unlock hyper-personalized pattern extraction and behavioral tracking.</p>
+                        <div className="prose prose-slate prose-sm max-w-none text-slate-600 font-medium leading-relaxed">
+                            <div className="space-y-4">
+                                <p className="text-slate-800 font-bold text-lg">Smart Behavior Analysis</p>
+                                <p className="text-base text-slate-600 leading-loose">{insightData.behavior}</p>
+                                
+                                <div className="mt-8 pt-6 border-t border-slate-100">
+                                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">Overall Risk Protocol</p>
+                                    <div className={`inline-flex items-center gap-2 px-4 py-2 ${
+                                        insightData.risk === 'HIGH' ? 'bg-rose-50 text-rose-600' :
+                                        insightData.risk === 'MEDIUM' ? 'bg-amber-50 text-amber-600' :
+                                        'bg-emerald-50 text-emerald-600'
+                                    } rounded-xl shadow-sm border border-transparent`}>
+                                        <ShieldCheck size={18} />
+                                        <span className="font-black text-xs uppercase tracking-widest">{insightData.risk}</span>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -178,36 +280,33 @@ const InsightsPage = () => {
                         </div>
                         <h3 className="text-xl font-black tracking-tight text-slate-900">Savings Opportunities</h3>
                     </div>
-                    
-                    <div className="space-y-4 flex-1">
-                        {/* Mock Opportunity 1 */}
-                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-400 transition-colors group cursor-pointer flex gap-4 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 px-2 py-0.5 bg-rose-500 text-white font-black text-[9px] uppercase tracking-widest rounded-bl-lg">Critical</div>
-                            <div className="w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-amber-500 transition-colors">
-                                <Target size={20} />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 mb-1">Zombie Subscriptions</h4>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">Cancel 2 detected idle services to recover immediate cash flow before auto-renewal in 3 days.</p>
-                                <div className="mt-3 inline-flex px-3 py-1 bg-amber-100 text-amber-700 font-black text-[10px] uppercase tracking-widest rounded-lg">
-                                    Unlock ₹1,400 / mo
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Mock Opportunity 2 */}
-                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-400 transition-colors group cursor-pointer flex gap-4">
-                            <div className="w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                <TrendingUp size={20} />
+                    <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+                        {loading ? (
+                            <div className="h-16 bg-slate-50 border border-slate-100 rounded-2xl animate-pulse"></div>
+                        ) : insightData.suggestions.length > 0 ? (
+                            insightData.suggestions.map((suggestion, idx) => {
+                                const isCritical = suggestion.toLowerCase().includes("high alert") || suggestion.toLowerCase().includes("exceed");
+                                return (
+                                    <div key={idx} className={`p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-${isCritical ? 'rose' : 'amber'}-400 transition-colors group flex gap-4 relative overflow-hidden`}>
+                                        {isCritical && (
+                                            <div className="absolute top-0 right-0 px-2 py-0.5 bg-rose-500 text-white font-black text-[9px] uppercase tracking-widest rounded-bl-lg">CRITICAL</div>
+                                        )}
+                                        <div className={`w-12 h-12 shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-400 group-hover:text-${isCritical ? 'rose' : 'amber'}-500 transition-colors`}>
+                                            <Target size={20} />
+                                        </div>
+                                        <div className="flex-1 my-auto">
+                                            <p className="text-sm text-slate-600 font-semibold leading-relaxed">{suggestion}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm font-bold flex gap-4 items-center">
+                                <Sparkles size={24} />
+                                You're doing excellent! No adjustments needed.
                             </div>
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-900 mb-1">Food Delivery Peak</h4>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">You are spending 30% above benchmark on weekend dining. Strict capping yields fast ROI.</p>
-                                <div className="mt-3 inline-flex px-3 py-1 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase tracking-widest rounded-lg">
-                                    Recover ₹3,200 / mo
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -216,38 +315,88 @@ const InsightsPage = () => {
             {/* 3. BOTTOM SECTION - Ask FinFlow Anything */}
             <div className="bg-slate-900 rounded-[2.5rem] p-8 lg:p-10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] border border-slate-800 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 via-indigo-500 to-rose-500 opacity-80"></div>
-                
+
                 <h3 className="text-2xl font-black text-white tracking-tight mb-2">Ask FinFlow Anything</h3>
                 <p className="text-sm font-semibold text-slate-400 mb-8">Get instant answers about your financial trends, specific transactions, or budgeting strategies directly from our AI.</p>
-                
-                <form 
-                    onSubmit={(e) => { e.preventDefault(); toast.success('AI query sent successfully!'); setChatInput(''); }}
+
+                <form
+                    onSubmit={handleAskAi}
                     className="relative flex items-center"
                 >
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="e.g. How much did I spend on food this weekend vs last weekend?"
                         className="w-full bg-slate-950 text-white rounded-2xl placeholder-slate-500 font-medium px-6 py-5 pr-16 border-2 border-slate-800 focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 transition-all duration-300"
+                        disabled={isAiLoading}
                     />
-                    <button 
+                    <button
                         type="submit"
-                        disabled={!chatInput.trim()}
-                        className="absolute right-3 p-3 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl transition-all disabled:opacity-50 disabled:hover:bg-teal-500"
+                        disabled={!chatInput.trim() || isAiLoading}
+                        className="absolute right-3 p-3 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-xl transition-all disabled:opacity-50 disabled:hover:bg-teal-500 flex items-center justify-center"
                     >
-                        <Send size={18} className="transform -ml-0.5 mt-0.5" />
+                        {isAiLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="transform -ml-0.5 mt-0.5" />}
                     </button>
                 </form>
 
-                <div className="mt-6 flex flex-wrap gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mr-2 flex items-center">Suggested Queries</span>
-                    <button onClick={() => setChatInput("Compare my April spending to March")} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition-colors">Compare my April spending to March</button>
-                    <button onClick={() => setChatInput("Identify my most expensive habits")} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition-colors">Identify my most expensive habits</button>
-                    <button onClick={() => setChatInput("Where can I cut ₹5,000 immediately?")} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 transition-colors">Where can I cut ₹5,000 immediately?</button>
+                {/* AI Response Display Area */}
+                {(isAiLoading || aiResponse) && (
+                    <div className="mt-6 p-6 rounded-2xl bg-white text-slate-900 shadow-sm border border-slate-100 flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <Sparkles size={16} className="text-indigo-500" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Response</span>
+                        </div>
+                        {isAiLoading ? (
+                            <div className="flex items-center gap-3">
+                                <Loader2 className="animate-spin text-teal-500" size={20} />
+                                <span className="text-sm font-bold text-slate-500">Scanning financial parameters...</span>
+                            </div>
+                        ) : (
+                            <div className="prose prose-sm max-w-none prose-slate font-medium text-slate-700 marker:text-indigo-500">
+                                <ReactMarkdown>{aiResponse}</ReactMarkdown>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="mt-10">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Sparkles size={16} className="text-teal-500" />
+                        <h4 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Suggested AI Queries</h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {SUGGESTED_QUERIES.map((group, groupIdx) => (
+                            <div key={groupIdx} className="space-y-4">
+                                <h5 className="text-[11px] font-black uppercase tracking-widest text-slate-500">{group.category}</h5>
+                                <div className="space-y-3">
+                                    {group.queries.map((q, qIdx) => {
+                                        const Icon = q.icon;
+                                        return (
+                                            <button
+                                                key={qIdx}
+                                                onClick={() => { 
+                                                    setChatInput(q.text); 
+                                                    // Trigger form submission
+                                                    setTimeout(() => document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })), 0); 
+                                                }}
+                                                className="w-full text-left p-4 rounded-2xl bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 hover:border-teal-500/40 hover:shadow-[0_4px_20px_-5px_rgba(20,184,166,0.15)] transition-all duration-300 group flex items-start gap-3"
+                                            >
+                                                <div className="p-2 rounded-xl bg-slate-900 text-slate-400 group-hover:text-teal-400 group-hover:bg-teal-500/10 transition-colors shrink-0">
+                                                    <Icon size={16} />
+                                                </div>
+                                                <span className="text-xs font-semibold text-slate-300 group-hover:text-white leading-relaxed mt-0.5">{q.text}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
-            
+
         </div>
     );
 };
