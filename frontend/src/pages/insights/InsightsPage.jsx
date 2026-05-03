@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { askAi } from '../services/insightService';
-import { getExpenses } from '../services/expenseService';
-import { getBudgets } from '../services/budgetService';
-import { generateInsights, calculateSpendingVelocity, calculateMonthlyProjection } from '../utils/financialInsights';
+import { askAi } from '../../services/insights/insightService';
+import { getExpenses } from '../../services/expenses/expenseService';
+import { getBudgets } from '../../services/budget/budgetService';
+import { generateInsights, calculateSpendingVelocity, calculateMonthlyProjection } from '../../utils/financialInsights';
 import ReactMarkdown from 'react-markdown';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import {
     Download,
     Share2,

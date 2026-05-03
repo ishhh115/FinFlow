@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MessageSquare, X, Send, Sparkles, Loader2, Maximize2, Minimize2, Trash2, Plus, MessageCircle, Menu, PanelLeftClose } from 'lucide-react';
-import { askAi } from '../../services/insightService';
+import { askAi } from '../../services/insights/insightService';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';

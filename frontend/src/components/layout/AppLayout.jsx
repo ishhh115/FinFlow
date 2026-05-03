@@ -25,7 +25,7 @@ const AppLayout = ({ children }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -34,124 +34,116 @@ const AppLayout = ({ children }) => {
     };
 
     return (
-        <div className="min-h-screen bg-background flex">
-            {/* Sidebar */}
-            <aside className={`
-                fixed inset-y-0 left-0 z-50 w-64 bg-primary text-white
-                transform transition-transform duration-300
-                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                lg:translate-x-0 lg:static lg:inset-auto
-            `}>
-                {/* Logo */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                    <img src="/logo.jpeg" alt="FinFlow" className="h-10 object-contain" />
-                    <button
-                        onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
+        <div className="min-h-screen bg-slate-950 flex flex-col">
+            {/* Netflix-Inspired Top Navbar */}
+            <header className="sticky top-0 z-50 bg-gradient-to-b from-black/80 to-black/40 backdrop-blur-md border-b border-white/5">
+                <div className="flex items-center justify-between px-4 md:px-8 py-4 max-w-full">
+                    {/* Logo - Left */}
+                    <Link to="/" className="flex-shrink-0 flex items-center">
+                        <img src="/logo.jpg" alt="Logo" className="h-8 md:h-9 object-contain" />
+                    </Link>
 
-                {/* Nav Links */}
-                <nav className="p-4 space-y-1">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.path}
-                            to={link.path}
-                            onClick={() => setSidebarOpen(false)}
-                            className={`
-                                flex items-center gap-3 px-4 py-3 rounded-lg
-                                transition-colors duration-200
-                                ${location.pathname === link.path
-                                    ? 'bg-white/20 text-white font-medium'
-                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                                }
-                            `}
-                        >
-                            <link.icon size={20} />
-                            {link.label}
-                        </Link>
-                    ))}
-                </nav>
-
-                {/* User + Logout */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-                    <div className="flex items-center gap-3 px-4 py-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
-                            {user?.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">{user?.name}</p>
-                            <p className="text-xs text-white/60">{user?.email}</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors w-full"
-                    >
-                        <LogOut size={20} />
-                        Logout
-                    </button>
-                </div>
-            </aside>
-
-            {/* Overlay for mobile */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen">
-                {/* Navbar */}
-                <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden text-gray-600"
-                    >
-                        <Menu size={24} />
-                    </button>
-                    <h1 className="text-lg font-semibold text-gray-800">
-                        {navLinks.find(l => l.path === location.pathname)?.label || 'FinFlow'}
-                    </h1>
-                    <div className="flex items-center gap-3">
-                        <p className="hidden sm:block text-sm text-gray-500">
-                            Welcome, {user?.name?.split(' ')[0]}!
-                        </p>
-                        <div className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold text-sm">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                        </div>
-                    </div>
-                </header>
-
-                {/* Page Content */}
-                <main className="flex-1 p-6 pb-24 lg:pb-6">
-                    {children}
-                </main>
-
-                <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-2 py-2">
-                    <div className="grid grid-cols-5 gap-1">
+                    {/* Desktop Navigation - Center */}
+                    <nav className="hidden md:flex items-center gap-1 flex-1 justify-center mx-8">
                         {navLinks.map((link) => {
                             const isActive = location.pathname === link.path;
+                            const Icon = link.icon;
                             return (
                                 <Link
                                     key={link.path}
                                     to={link.path}
-                                    className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg transition ${
-                                        isActive ? 'text-teal-700 bg-teal-50' : 'text-slate-500'
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                        isActive
+                                            ? 'text-white bg-white/10'
+                                            : 'text-gray-300 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
-                                    <link.icon size={18} />
-                                    <span className="text-[11px] font-medium">{link.label.replace('AI ', '')}</span>
+                                    <Icon size={16} />
+                                    <span>{link.label}</span>
                                 </Link>
                             );
                         })}
+                    </nav>
+
+                    {/* User Profile / Logout - Right (Desktop) */}
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-xs font-bold text-white">
+                                {user?.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="hidden lg:block">
+                                <p className="text-xs font-medium text-gray-200">{user?.name?.split(' ')[0]}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200"
+                        >
+                            <LogOut size={16} />
+                            <span className="hidden lg:inline">Logout</span>
+                        </button>
                     </div>
-                </nav>
-            </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden text-gray-300 hover:text-white transition-colors"
+                    >
+                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
+
+                {/* Mobile Drop-down Menu */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden bg-black/90 border-t border-white/10 px-4 py-3 space-y-2">
+                        {navLinks.map((link) => {
+                            const isActive = location.pathname === link.path;
+                            const Icon = link.icon;
+                            return (
+                                <Link
+                                    key={link.path}
+                                    to={link.path}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`flex items-center gap-3 px-3 py-3 rounded-md transition-all ${
+                                        isActive
+                                            ? 'text-white bg-white/10'
+                                            : 'text-gray-300 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <Icon size={18} />
+                                    <span className="font-medium">{link.label}</span>
+                                </Link>
+                            );
+                        })}
+                        <div className="border-t border-white/10 pt-3 mt-3">
+                            <div className="flex items-center gap-3 px-3 py-2 mb-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-xs font-bold text-white">
+                                    {user?.name?.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-200">{user?.name}</p>
+                                    <p className="text-xs text-gray-400">{user?.email}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    handleLogout();
+                                    setMobileMenuOpen(false);
+                                }}
+                                className="flex items-center gap-3 px-3 py-3 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition-all w-full"
+                            >
+                                <LogOut size={18} />
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </header>
+
+            {/* Page Content */}
+            <main className="flex-1 p-4 sm:p-6 md:p-8">
+                {children}
+            </main>
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import api from './api.js';
+import api from '../core/api.js';
 
 export const getExchangeRates = async (base = 'INR') => {
     const response = await api.get('/currencies/rates', { params: { base } });

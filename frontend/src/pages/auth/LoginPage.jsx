@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { login } from '../services/authService';
+import { useAuth } from '../../context/AuthContext';
+import { login } from '../../services/auth/authService';
 import toast from 'react-hot-toast';
 
 const LoginPage = () => {
@@ -33,7 +33,7 @@ const LoginPage = () => {
         <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-primary">FinFlow</h1>
+                    <img src="/logo.jpg" alt="Logo" className="h-12 mx-auto object-contain" />
                     <p className="text-gray-500 mt-2">Sign in to your account</p>
                 </div>
 

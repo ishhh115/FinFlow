@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { deleteBudget, getBudgets, setBudget } from '../services/budgetService';
-import { getExpenses } from '../services/expenseService';
-import ProgressBar from '../components/common/ProgressBar';
-import SectionCard from '../components/common/SectionCard';
-import StatCard from '../components/common/StatCard';
+import { deleteBudget, getBudgets, setBudget } from '../../services/budget/budgetService';
+import { getExpenses } from '../../services/expenses/expenseService';
+import ProgressBar from '../../components/common/ProgressBar';
+import SectionCard from '../../components/common/SectionCard';
+import StatCard from '../../components/common/StatCard';
 import { 
     Coffee,
     Navigation,
@@ -155,25 +155,25 @@ const BudgetPage = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
                 <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-600 mb-1">Financial Controls</p>
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-slate-900">Budget Allocation</h1>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-400 mb-1">Financial Controls</p>
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white">Budget Allocation</h1>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-all duration-300 hover:shadow-lg">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Total Budget Configured</p>
-                    <p className="text-4xl text-slate-800 font-black tracking-tight">{formatCurrency(budgetTotals.limit)}</p>
+                <div className="bg-slate-800/60 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.3)] border border-slate-700 flex flex-col justify-center transition-all duration-300 hover:shadow-lg hover:bg-slate-800/80">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-300 mb-2">Total Budget Configured</p>
+                    <p className="text-4xl text-white font-black tracking-tight">{formatCurrency(budgetTotals.limit)}</p>
                 </div>
 
-                <div className="bg-red-50/40 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] border border-red-100/50 flex flex-col justify-center transition-all duration-300 hover:shadow-lg">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-red-500 mb-2">Gross Spendings</p>
-                    <p className="text-4xl text-red-600 font-black tracking-tight">{formatCurrency(budgetTotals.spent)}</p>
+                <div className="bg-red-900/40 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.3)] border border-red-700/50 flex flex-col justify-center transition-all duration-300 hover:shadow-lg hover:bg-red-900/60">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-red-300 mb-2">Gross Spendings</p>
+                    <p className="text-4xl text-red-400 font-black tracking-tight">{formatCurrency(budgetTotals.spent)}</p>
                 </div>
 
-                <div className="bg-teal-50/40 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] border border-teal-100/50 flex flex-col justify-center transition-all duration-300 hover:shadow-lg">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-teal-700 mb-2">Capital Remaining</p>
-                    <p className="text-4xl text-teal-700 font-black tracking-tight">{formatCurrency(budgetTotals.remaining)}</p>
+                <div className="bg-teal-900/40 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.3)] border border-teal-700/50 flex flex-col justify-center transition-all duration-300 hover:shadow-lg hover:bg-teal-900/60">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-teal-300 mb-2">Capital Remaining</p>
+                    <p className="text-4xl text-teal-400 font-black tracking-tight">{formatCurrency(budgetTotals.remaining)}</p>
                 </div>
             </div>
 
@@ -249,7 +249,7 @@ const BudgetPage = () => {
 
             <div className="mt-8">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Category Breakdown</h3>
+                    <h3 className="text-2xl font-black text-white tracking-tight">Category Breakdown</h3>
                 </div>
 
                 {loading ? (

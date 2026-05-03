@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
-import { changePassword, updateProfile } from '../services/authService';
+import { useAuth } from '../../context/AuthContext';
+import { changePassword, updateProfile } from '../../services/auth/authService';
 import {
     User, Shield, Settings2, DollarSign, BrainCircuit, Database, AlertTriangle, LogOut, Download, Trash2, Smartphone, RotateCcw
 } from 'lucide-react';
+
+const THEME_STORAGE_KEY = 'finflow_theme_mode';
+
+const applyThemeMode = (isDarkMode) => {
+    const theme = isDarkMode ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
+};
 
 const SettingsCard = ({ title, subtitle, icon: Icon, colorClass, children }) => (
     <div className="rounded-[2.5rem] bg-white border border-slate-100 p-8 lg:p-10 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] relative overflow-hidden group">
@@ -88,6 +96,18 @@ const SettingsPage = () => {
         });
     }, [user]);
 
+    useEffect(() => {
+        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        const isDarkMode = storedTheme === 'dark';
+
+        setPrefs((prev) => ({
+            ...prev,
+            darkMode: isDarkMode,
+        }));
+
+        applyThemeMode(isDarkMode);
+    }, []);
+
     const handleProfileSubmit = async (e) => {
         e.preventDefault();
         setProfileLoading(true);
@@ -122,6 +142,14 @@ const SettingsPage = () => {
 
     const handleMockToggle = (key, val) => {
         setPrefs(p => ({ ...p, [key]: val }));
+
+        if (key === 'darkMode') {
+            localStorage.setItem(THEME_STORAGE_KEY, val ? 'dark' : 'light');
+            applyThemeMode(val);
+            toast.success(`Theme changed to ${val ? 'Dark' : 'Light'} mode`);
+            return;
+        }
+
         toast.success('Preference updated');
     };
 
@@ -143,7 +171,7 @@ const SettingsPage = () => {
             <div className="fixed inset-0 pointer-events-none z-[-1]" style={{ backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)', backgroundSize: '32px 32px', opacity: 0.4 }}></div>
             
             <div className="relative z-10 mb-8 pt-4">
-                <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">App Settings</h1>
+                <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">App Settings</h1>
                 <p className="text-sm font-bold text-slate-400 mt-2 uppercase tracking-widest">Manage your FinFlow experience</p>
             </div>
 

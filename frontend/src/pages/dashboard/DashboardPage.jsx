@@ -17,12 +17,12 @@ import {
     ArrowDownRight,
     Receipt,
 } from 'lucide-react';
-import { getDashboard, getSpendingStreak } from '../services/dashboardService';
-import { useAuth } from '../context/AuthContext';
+import { getDashboard, getSpendingStreak } from '../../services/dashboard/dashboardService';
+import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
-import SectionCard from '../components/common/SectionCard';
-import StatCard from '../components/common/StatCard';
-import ProgressBar from '../components/common/ProgressBar';
+import SectionCard from '../../components/common/SectionCard';
+import StatCard from '../../components/common/StatCard';
+import ProgressBar from '../../components/common/ProgressBar';
 
 const CATEGORY_COLORS = [
     'bg-teal-400', 
@@ -193,10 +193,10 @@ const DashboardPage = () => {
                 <SectionCard title="6-Month Trend" subtitle="Visualize your cash flow direction" className="xl:col-span-2">
                     <div className="h-[360px] pt-6 relative group w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={monthlyBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <BarChart data={monthlyBarData} margin={{ top: 10, right: 18, left: 12, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 13, fontWeight: 600}} dy={15} />
-                                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 13, fontWeight: 600}} dx={-10} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} height={56} tickMargin={12} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} width={72} tickMargin={10} />
                                 <Tooltip 
                                     formatter={(value) => currencyFormatter(value, activeCurrency)}
                                     cursor={{fill: '#f8fafc', opacity: 0.6}}

@@ -1,4 +1,4 @@
-import api from './api.js';
+import api from '../core/api.js';
 
 export const getDashboard = async () => {
     const response = await api.get('/dashboard');

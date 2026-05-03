@@ -34,9 +34,9 @@ import {
     exportExpenses,
     getExpenses,
     updateExpense,
-} from '../services/expenseService';
-import SectionCard from '../components/common/SectionCard';
-import StatCard from '../components/common/StatCard';
+} from '../../services/expenses/expenseService';
+import SectionCard from '../../components/common/SectionCard';
+import StatCard from '../../components/common/StatCard';
 
 const getCategoryIcon = (category) => {
     switch(category) {
@@ -52,6 +52,27 @@ const getCategoryIcon = (category) => {
 
 const categories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Health', 'Utilities', 'Other'];
 const DONUT_COLORS = ['#14b8a6', '#8b5cf6', '#f97316', '#3b82f6', '#f43f5e', '#eab308', '#64748b'];
+
+const categoryRules = {
+    Food: ['swiggy', 'zomato', 'restaurant', 'cafe', 'mcdonalds', 'kfc', 'swiggy instamart'],
+    Transport: ['uber', 'ola', 'taxi', 'cab', 'flight', 'irctc', 'train', 'bus'],
+    Shopping: ['amazon', 'flipkart', 'myntra', 'zara', 'h&m', 'store', 'mall'],
+    Entertainment: ['netflix', 'prime', 'spotify', 'movie', 'cinema', 'games', 'steam'],
+    Utilities: ['electricity', 'water', 'internet', 'wifi', 'recharge', 'jio', 'airtel'],
+    Health: ['pharmacy', 'hospital', 'doctor', 'clinic', 'medicine', 'apollo', 'medical']
+};
+
+const getCategoryFromDescription = (description, fallbackCategory = 'Other') => {
+    if (!description) return fallbackCategory;
+    const lowerDesc = description.toLowerCase();
+    
+    for (const [category, keywords] of Object.entries(categoryRules)) {
+        if (keywords.some(keyword => lowerDesc.includes(keyword))) {
+            return category;
+        }
+    }
+    return fallbackCategory;
+};
 
 const getDefaultFormState = () => ({
     amount: '',
@@ -114,6 +135,20 @@ const ExpensesPage = () => {
         setEditingId('');
     };
 
+    const handleDescriptionChange = (e) => {
+        const value = e.target.value;
+        
+        // Use previously bound category as the fallback so user selections aren't overwritten arbitrarily 
+        // if no keywords are matched after a manual change.
+        const matchedCategory = getCategoryFromDescription(value, formData.category);
+
+        setFormData(prev => ({
+            ...prev,
+            description: value,
+            category: matchedCategory
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -157,6 +192,7 @@ const ExpensesPage = () => {
             await deleteExpense(id);
             toast.success('Expense deleted');
             await loadExpenses();
+        } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to delete expense');
         }
     };
@@ -168,21 +204,44 @@ const ExpensesPage = () => {
         }
     };
 
-    const handleExtractDetails = () => {
+    // Simulated OCR Service - Replace with real API later
+    const mockOCRService = async (file) => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve({
+                    merchant: "Swiggy",
+                    amount: 350,
+                    date: "2026-04-08",
+                    category: "Food"
+                });
+            }, 1500);
+        });
+    };
+
+    const handleExtractDetails = async () => {
         setIsExtracting(true);
-        toast.success('Scanning receipt using AI (Mock)...');
-        setTimeout(() => {
+        toast.success('Scanning receipt...');
+        
+        try {
+            const file = fileInputRef.current?.files?.[0];
+            const data = await mockOCRService(file);
+            
             setFormData(prev => ({
                 ...prev,
-                amount: '1250',
-                description: 'Lunch at Cafe',
-                category: 'Food'
+                amount: data.amount,
+                description: data.merchant,
+                category: data.category,
+                date: data.date
             }));
+            
+            toast.success('Details extracted successfully!');
+        } catch (error) {
+            toast.error('Failed to extract details from receipt');
+        } finally {
             setReceiptPreview(null);
             setIsExtracting(false);
-            toast.success('Details extracted successfully!');
             if (fileInputRef.current) fileInputRef.current.value = "";
-        }, 1500);
+        }
     };
 
     const clearReceipt = () => {
@@ -283,8 +342,8 @@ const ExpensesPage = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
                 <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-600 mb-1">Financial Overview</p>
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-slate-900">Manage Spending</h1>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-400 mb-1">Financial Overview</p>
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white">Manage Spending</h1>
                 </div>
                 <button
                     onClick={() => document.getElementById('expense-form')?.scrollIntoView({ behavior: 'smooth' })}
@@ -431,7 +490,7 @@ const ExpensesPage = () => {
                     <input
                         type="text"
                         value={formData.description}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                        onChange={handleDescriptionChange}
                         className="rounded-lg border border-slate-300 px-3 py-2"
                         placeholder="Description"
                         required

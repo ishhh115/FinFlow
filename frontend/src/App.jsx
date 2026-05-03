@@ -1,16 +1,19 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import AppLayout from './components/layout/AppLayout';
 import AIAssistant from './components/common/AIAssistant';
 
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import ExpensesPage from './pages/ExpensesPage';
-import BudgetPage from './pages/BudgetPage';
-import InsightsPage from './pages/InsightsPage';
-import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import ExpensesPage from './pages/expenses/ExpensesPage';
+import BudgetPage from './pages/budget/BudgetPage';
+import InsightsPage from './pages/insights/InsightsPage';
+import SettingsPage from './pages/settings/SettingsPage';
+
+const THEME_STORAGE_KEY = 'finflow_theme_mode';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
@@ -40,6 +43,14 @@ function AppRoutes() {
 }
 
 function App() {
+    useEffect(() => {
+        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        const theme = storedTheme === 'dark' ? 'dark' : 'light';
+
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+    }, []);
+
     return (
         <Router>
             <AuthProvider>
